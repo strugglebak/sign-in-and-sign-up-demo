@@ -26,7 +26,6 @@
       display: inline-block;
       min-width: 4em;
     }
-
   </style>
 </head>
 <body>
@@ -87,10 +86,13 @@
           .text('密码不匹配')
         return
       }
-      $.post('/sign_up', hash)  
+      $.post('/sign_up', hash)
         .then((response)=>{
           console.log(response)
+          window.location.href = '/sign_in'
         }, (request)=>{
+          console.log(request);
+          // 将后端返回的符合 JSON 语法的字符串转换成对象
           let {errors} = request.responseJSON
           if(errors.email && errors.email === 'invalid'){
             $form.find('[name="email"]').siblings('.error')

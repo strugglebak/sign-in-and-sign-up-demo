@@ -10,27 +10,29 @@ if(!port){
 
 var server = http.createServer(function(request, response){
   var parsedUrl = url.parse(request.url, true)
-  var pathWithQuery = request.url 
+  var pathWithQuery = request.url
   var queryString = ''
   if(pathWithQuery.indexOf('?') >= 0){ queryString = pathWithQuery.substring(pathWithQuery.indexOf('?')) }
   var path = parsedUrl.pathname
   var query = parsedUrl.query
   var method = request.method
 
-  /******** 从这里开始看，上面不要看 ************/
-
-  console.log('方方说：含查询字符串的路径\n' + pathWithQuery)
+  console.log('含查询字符串的路径\n' + pathWithQuery)
 
   if(path === '/'){
+    // 若请求是根路径
     let string = fs.readFileSync('./index.html', 'utf8')
+    // 解析请求中的 Cookie, 并存放到一个 hash 中
     let cookies =  request.headers.cookie.split('; ') // ['email=1@', 'a=1', 'b=2']
     let hash = {}
     for(let i =0;i<cookies.length; i++){
       let parts = cookies[i].split('=')
       let key = parts[0]
       let value = parts[1]
-      hash[key] = value 
+      hash[key] = value
     }
+
+    //从文件模拟的数据库中查找用户是否存在
     let email = hash.sign_in_email
     let users = fs.readFileSync('./db/users', 'utf8')
     users = JSON.parse(users)
@@ -47,20 +49,26 @@ var server = http.createServer(function(request, response){
     }else{
       string = string.replace('__password__', '不知道')
     }
+
+    // 返回 index.html
     response.statusCode = 200
     response.setHeader('Content-Type', 'text/html;charset=utf-8')
     response.write(string)
     response.end()
-  }else if(path === '/sign_up' && method === 'GET'){ 
+  }else if(path === '/sign_up' && method === 'GET'){
+    // GET 请求/sign_up, 返回对应的 sign_up.html
     let string = fs.readFileSync('./sign_up.html', 'utf8')
     response.statusCode = 200
     response.setHeader('Content-Type', 'text/html;charset=utf-8')
     response.write(string)
     response.end()
   }else if(path === '/sign_up' && method === 'POST'){
+    // POST 请求/sign_up, 调用 readBody 这个 Promise
+    // 得到 HTTP 请求的第四部分信息(用户的注册信息, email password password_confirmation)
     readBody(request).then((body)=>{
       let strings = body.split('&') // ['email=1', 'password=2', 'password_confirmation=3']
       let hash = {}
+      // 将这部分信息一个一个取出放到 hash 里面
       strings.forEach((string)=>{
         // string == 'email=1'
         let parts = string.split('=') // ['email', '1']
@@ -87,6 +95,7 @@ var server = http.createServer(function(request, response){
         }catch(exception){
           users = []
         }
+        // 查询用户注册的 email 是否已经在数据库中
         let inUse = false
         for(let i=0; i<users.length; i++){
           let user = users[i]
@@ -139,6 +148,7 @@ var server = http.createServer(function(request, response){
         }
       }
       if(found){
+        // 登录后后端就需要发送响应的 Cookie 给浏览器
         response.setHeader('Set-Cookie', `sign_in_email=${email}`)
         response.statusCode = 200
       }else{
@@ -146,30 +156,10 @@ var server = http.createServer(function(request, response){
       }
       response.end()
     })
-  }else if(path==='/main.js'){
-    let string = fs.readFileSync('./main.js', 'utf8')
-    response.statusCode = 200
-    response.setHeader('Content-Type', 'text/javascript;charset=utf-8')
-    response.write(string)
-    response.end()
-  }else if(path==='/xxx'){
-    response.statusCode = 200
-    response.setHeader('Content-Type', 'text/json;charset=utf-8')
-    response.setHeader('Access-Control-Allow-Origin', 'http://frank.com:8001')
-    response.write(`
-    {
-      "note":{
-        "to": "小谷",
-        "from": "方方",
-        "heading": "打招呼",
-        "content": "hi"
-      }
-    }
-    `)
-    response.end()
   }else{
     response.statusCode = 404
     response.setHeader('Content-Type', 'text/html;charset=utf-8')
+    // 返回一个 JSON
     response.write(`
       {
         "error": "not found"
@@ -177,16 +167,17 @@ var server = http.createServer(function(request, response){
     `)
     response.end()
   }
-
-  /******** 代码结束，下面不要看 ************/
 })
 
 function readBody(request){
   return new Promise((resolve, reject)=>{
     let body = []
+    // 监听 data 事件
     request.on('data', (chunk) => {
       body.push(chunk);
     }).on('end', () => {
+      // data 事件结束
+      // body 转码
       body = Buffer.concat(body).toString();
       resolve(body)
     })
