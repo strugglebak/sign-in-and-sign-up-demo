@@ -3,6 +3,9 @@ var fs = require('fs')
 var url = require('url')
 var port = process.argv[2]
 
+// 定义一个空 session
+var sessions = {}
+
 if(!port){
   console.log('请指定端口号好不啦？\nnode server.js 8888 这样不会吗？')
   process.exit(1)
@@ -23,7 +26,7 @@ var server = http.createServer(function(request, response){
     // 若请求是根路径
     let string = fs.readFileSync('./index.html', 'utf8')
     // 解析请求中的 Cookie, 并存放到一个 hash 中
-    let cookies =  request.headers.cookie.split('; ') // ['email=1@', 'a=1', 'b=2']
+    let cookies = request.headers.cookie.split('; ') // ['email=1@', 'a=1', 'b=2']
     let hash = {}
     for(let i =0;i<cookies.length; i++){
       let parts = cookies[i].split('=')
@@ -33,7 +36,7 @@ var server = http.createServer(function(request, response){
     }
 
     //从文件模拟的数据库中查找用户是否存在
-    let email = hash.sign_in_email
+    let email = sessions[hash['session-id']].sign_in_email
     let users = fs.readFileSync('./db/users', 'utf8')
     users = JSON.parse(users)
     let foundUser
@@ -149,7 +152,10 @@ var server = http.createServer(function(request, response){
       }
       if(found){
         // 登录后后端就需要发送响应的 Cookie 给浏览器
-        response.setHeader('Set-Cookie', `sign_in_email=${email}`)
+        // 先生成一个 session-id
+        let sessionId = Math.random() * 100000
+        sessions[sessionId] = {sign_in_email: email}
+        response.setHeader('Set-Cookie', `session-id=${sessionId}`)
         response.statusCode = 200
       }else{
         response.statusCode = 401
