@@ -36,7 +36,11 @@ var server = http.createServer(function(request, response){
     }
 
     //从文件模拟的数据库中查找用户是否存在
-    let email = sessions[hash['session-id']].sign_in_email
+    let email = ''
+    let sessionId = hash['session-id']
+    if(sessions[sessionId]){
+      email = sessions[sessionId].sign_in_email
+    }
     let users = fs.readFileSync('./db/users', 'utf8')
     users = JSON.parse(users)
     let foundUser
