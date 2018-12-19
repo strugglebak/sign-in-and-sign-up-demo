@@ -25,19 +25,12 @@ var server = http.createServer(function(request, response){
   if(path === '/'){
     // 若请求是根路径
     let string = fs.readFileSync('./index.html', 'utf8')
-    // 解析请求中的 Cookie, 并存放到一个 hash 中
-    let cookies = request.headers.cookie.split('; ') // ['email=1@', 'a=1', 'b=2']
-    let hash = {}
-    for(let i =0;i<cookies.length; i++){
-      let parts = cookies[i].split('=')
-      let key = parts[0]
-      let value = parts[1]
-      hash[key] = value
-    }
 
     //从文件模拟的数据库中查找用户是否存在
     let email = ''
-    let sessionId = hash['session-id']
+    // 通过查询参数拿到 sessionId
+    let sessionId = query.sessionId
+    console.log(sessionId)
     if(sessions[sessionId]){
       email = sessions[sessionId].sign_in_email
     }
@@ -159,7 +152,10 @@ var server = http.createServer(function(request, response){
         // 先生成一个 session-id
         let sessionId = Math.random() * 100000
         sessions[sessionId] = {sign_in_email: email}
-        response.setHeader('Set-Cookie', `session-id=${sessionId}`)
+        // sessionId 直接通过 JSON 传
+        response.write(`{
+          "sessionId": ${sessionId}
+        }`)
         response.statusCode = 200
       }else{
         response.statusCode = 401

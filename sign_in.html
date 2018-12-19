@@ -72,9 +72,11 @@
           .text('填密码呀同学')
         return
       }
-      $.post('/sign_in', hash)  
+      $.post('/sign_in', hash)
         .then((response)=>{
-          window.location.href = '/'
+          let sessionId = JSON.parse(response).sessionId
+          localStorage.setItem('sessionId', sessionId)
+          window.location.href = `/?sessionId=${sessionId}`
         }, (request)=>{
           alert('邮箱与密码不匹配')
         })
