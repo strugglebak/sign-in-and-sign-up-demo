@@ -21,8 +21,23 @@ var server = http.createServer(function(request, response){
   var method = request.method
 
   console.log('含查询字符串的路径\n' + pathWithQuery)
-
-  if(path === '/'){
+  if(path === '/js/main.js'){
+    let string = fs.readFileSync('./js/main.js', 'utf8')
+    response.statusCode = 200
+    response.setHeader('Content-Type', 'application/javascript;charset=utf-8')
+    response.setHeader('Cache-Control', 'max-age=3000000')
+    response.write(string)
+    response.end()
+  }
+  else if(path === '/css/default.css'){
+    let string = fs.readFileSync('./css/default.css', 'utf8')
+    response.statusCode = 200
+    response.setHeader('Content-Type', 'text/css;charset=utf-8')
+    response.setHeader('Cache-Control', 'max-age=3000000')
+    response.write(string)
+    response.end()
+  }
+  else if(path === '/'){
     // 若请求是根路径
     let string = fs.readFileSync('./index.html', 'utf8')
     // 解析请求中的 Cookie, 并存放到一个 hash 中
