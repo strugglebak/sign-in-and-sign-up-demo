@@ -6,6 +6,8 @@ var port = process.argv[2]
 // 定义一个空 session
 var sessions = {}
 
+var md5 = require('md5')
+
 if(!port){
   console.log('请指定端口号好不啦？\nnode server.js 8888 这样不会吗？')
   process.exit(1)
@@ -23,10 +25,16 @@ var server = http.createServer(function(request, response){
   console.log('含查询字符串的路径\n' + pathWithQuery)
   if(path === '/js/main.js'){
     let string = fs.readFileSync('./js/main.js', 'utf8')
-    response.statusCode = 200
+    let fileMd5 = md5(string)
     response.setHeader('Content-Type', 'application/javascript;charset=utf-8')
-    response.setHeader('Cache-Control', 'max-age=3000000')
-    response.write(string)
+    response.setHeader('ETag', fileMd5)
+    if(request.headers['if-none-match'] === fileMd5){
+      // 资源未改变,就返回 304 ，没有响应体
+      response.statusCode = 304
+    }else{
+      // 资源改变了,有响应体
+      response.write(string)
+    }
     response.end()
   }
   else if(path === '/css/default.css'){
